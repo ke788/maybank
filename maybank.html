@@ -141,8 +141,59 @@ border-radius: 3px;
     </style>
 </head>
 <body>
-    <body>
+  <div class="auth-container">
+    <!-- Create Account Form -->
+    <div id="createAccount">
+      <h2>Create Account</h2>
+      <input type="text" id="fullName" placeholder="Full Name" required />
+      <input type="email" id="email" placeholder="Email" required />
+      <input type="password" id="createPassword" placeholder="Password" required />
+      <button onclick="createAccount()">Create Account</button>
+      <p>Already have an account? <a href="#" onclick="toggleForms('login')">Login</a></p>
+    </div>
 
+    <!-- Login Form -->
+    <div id="loginForm" style="display: none;">
+      <h2>Login</h2>
+      <input type="email" id="loginEmail" placeholder="Email" required />
+      <input type="password" id="loginPassword" placeholder="Password" required />
+      <button onclick="login()">Login</button>
+      <p>Don't have an account? <a href="#" onclick="toggleForms('create')">Create Account</a></p>
+    </div>
+  </div>
+
+  <script>
+    function toggleForms(form) {
+      document.getElementById('createAccount').style.display = form === 'create' ? 'block' : 'none';
+      document.getElementById('loginForm').style.display = form === 'login' ? 'block' : 'none';
+    }
+
+    function createAccount() {
+      const fullName = document.getElementById('fullName').value;
+      const email = document.getElementById('email').value;
+      const password = document.getElementById('createPassword').value;
+
+      if (!fullName || !email || !password) return alert('Please fill all fields');
+
+      localStorage.setItem('user', JSON.stringify({ fullName, email, password, balance: 25000, transactions: [] }));
+      alert('Account created! Redirecting to login...');
+      toggleForms('login');
+    }
+
+    function login() {
+      const email = document.getElementById('loginEmail').value;
+      const password = document.getElementById('loginPassword').value;
+
+      const user = JSON.parse(localStorage.getItem('user'));
+
+      if (user && user.email === email && user.password === password) {
+        sessionStorage.setItem('loggedIn', 'true');
+        window.location.href = 'index.html';
+      } else {
+        alert('Invalid credentials');
+      }
+    }
+  </script>
 <!-- Top Bar -->
 <div class="topbar">
 <button class="icon-btn" onclick="toggleNotifications()">
